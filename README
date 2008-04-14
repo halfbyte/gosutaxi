@@ -1,0 +1,41 @@
+= GosuTaxi
+
+This project is thought of as a test for the gosu game dev library. It's 
+current primary goal is to mimick the C64 game "Space Taxi".
+
+It will use gosu and most probably Chipmunk, the physics library. Please have
+a look at the following URLs to learn how to install those two libs on your 
+platform.
+
+http://code.google.com/p/gosu/
+http://wiki.slembcke.net/main/published/Chipmunk
+
+Please don't ask me for a binary version just yet. That'd be silly. I mean, 
+look at the state of the in game gfx.  :)
+
+= Todo
+
+* making the tiles 16x16 to allow for bigger maps
+* almost everything. physics, collision detection, people, driving
+* cool additions on top of the original gameplay (networking?)
+
+= Credits & Development
+
+All code is (c) 2007 Jan Krutisch. Feel free to submit patches, send pull 
+requests via GitHub etc.
+
+= License
+
+DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+                    Version 2, December 2004
+
+ Copyright (C) 2004 Sam Hocevar
+  14 rue de Plaisance, 75014 Paris, France
+ Everyone is permitted to copy and distribute verbatim or modified
+ copies of this license document, and changing it is allowed as long
+ as the name is changed.
+
+            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+
+  0. You just DO WHAT THE FUCK YOU WANT TO.
