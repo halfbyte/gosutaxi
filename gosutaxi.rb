@@ -14,6 +14,8 @@ class GameWindow < Window
     self.caption = "Gosutaxi"
     
     @map = Map.new(self, "media/level001.txt")
+    # @song = Song.new(self, 'media/darksideofhousemix.mod')
+    # @song.play
     @taxi = Taxi.new(self)
   end
   def draw
