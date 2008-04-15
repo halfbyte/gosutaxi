@@ -1,0 +1,16 @@
+--- !ditz.rubyforge.org,2008-03-06/project 
+name: gosutaxi
+version: "0.2"
+components: 
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: gosutaxi
+releases: 
+- !ditz.rubyforge.org,2008-03-06/release 
+  name: Movement complete
+  status: :unreleased
+  release_time: 
+  log_events: 
+  - - 2008-04-15 23:41:20.325088 Z
+    - Jan Krutisch <jan@krutisch.de>
+    - created
+    - ""

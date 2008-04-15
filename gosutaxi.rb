@@ -2,6 +2,7 @@
 
 require 'rubygems'
 require 'gosu'
+require 'chipmunk'
 
 include Gosu
 
@@ -12,8 +13,17 @@ class GameWindow < Window
   def initialize
     super(SCREEN_WIDTH, SCREEN_HEIGHT, false, 16)
     self.caption = "Gosutaxi"
-    
+    @space = CP::Space.new
+    @space.damping = 0.8
+    @space.gravity = CP::Vec2.new(0, 10)
     @map = Map.new(self, "media/level001.txt")
+    @map.static_shapes.each do |shape|
+      @space.add_static_shape(shape)
+    end
+    
+    
+    
+    
     # @song = Song.new(self, 'media/darksideofhousemix.mod')
     # @song.play
     @taxi = Taxi.new(self)
@@ -55,7 +65,7 @@ end
 
          
 class Map
-  attr_reader :width, :height, :gems
+  attr_reader :width, :height, :static_shapes
   
   def initialize(window, filename)
     # Load 60x60 tiles, 5px overlap in all four directions.
@@ -64,22 +74,37 @@ class Map
     lines = File.readlines(filename).map { |line| line }
     @height = lines.size
     @width = lines[0].size
+    
+    @body = CP::Body.new(Float::MAX, Float::MAX)
+    
+    @static_shapes = []
+    
     @tiles = Array.new(@width) do |x|
       Array.new(@height) do |y|        
-        case lines[y][x, 1]
+        tile = case lines[y][x, 1]
         when '#'
+          shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
           Tiles::Full
         when '1'
+          shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
           Tiles::TopLeft
         when '3'
+          shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
           Tiles::TopRight
         when '2'
+          shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
           Tiles::BottomLeft
         when '4'
+          shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
           Tiles::BottomRight
         else
           nil
         end
+        if tile
+          shape = CP::Shape::Poly.new(@body, shape_vertices, CP::Vec2.new(x * 32 - 16, y * 32 - 16))
+          @static_shapes << shape        
+        end
+        tile
       end
     end
   end
@@ -98,7 +123,9 @@ class Map
       end
     end
   end
-  
+  def static_shapes
+    []
+  end
 end
 
 class Taxi
@@ -108,6 +135,9 @@ class Taxi
     @y_pos = 100
     @speed_x = 0
     @speed_y = 0
+    @body = CP::Body.new(10.0, 150.0)
+    vertices = [CP::Vec2.new(-32, -16),CP::Vec2.new(-32, 16), CP::Vec2.new(32, 16),CP::Vec2.new(32, -16)]
+    @shape = CP::Shape::Poly.new(@body, vertices, CP::Vec2.new(32,16))
   end
   
   def update

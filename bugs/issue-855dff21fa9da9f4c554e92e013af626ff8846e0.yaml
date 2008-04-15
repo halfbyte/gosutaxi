@@ -1,0 +1,24 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Enabling physics engine for taxi movement
+desc: |-
+  Physics Engine must be enabled in update hook and taxi movement must adhere
+  to physics engine
+type: :feature
+component: gosutaxi
+release: Movement complete
+reporter: Jan Krutisch <jan@krutisch.de>
+status: :unstarted
+disposition: 
+creation_time: 2008-04-15 23:37:51.853926 Z
+references: []
+
+id: 855dff21fa9da9f4c554e92e013af626ff8846e0
+log_events: 
+- - 2008-04-15 23:37:58.095090 Z
+  - Jan Krutisch <jan@krutisch.de>
+  - created
+  - ""
+- - 2008-04-15 23:43:28.161218 Z
+  - Jan Krutisch <jan@krutisch.de>
+  - assigned to release Movement complete from unassigned
+  - ""
