@@ -23,6 +23,8 @@ h2. Requirements
 ** unpack it, go to the ruby folder
 ** execute > ruby extconf.rb
 ** make && sudo make install
+* ditz for bug/issuetracking
+** sudo gem install ditz
 
 h2. Credits & Development
 
