@@ -9,20 +9,29 @@ include Gosu
 SCREEN_WIDTH = 640
 SCREEN_HEIGHT = 480
 
+SUBSTEPS = 6
+
 class GameWindow < Window
+  attr_reader :space
   def initialize
     super(SCREEN_WIDTH, SCREEN_HEIGHT, false, 16)
     self.caption = "Gosutaxi"
     @space = CP::Space.new
     @space.damping = 0.8
-    @space.gravity = CP::Vec2.new(0, 10)
+    @dt = (1.0/60.0)
+    @space.gravity = CP::Vec2.new(0, 5)
+    @space.iterations = 5
     @map = Map.new(self, "media/level001.txt")
+    @space.add_body(@map.static_shapes.first.body)
     @map.static_shapes.each do |shape|
       @space.add_static_shape(shape)
     end
     
-    
-    
+    # @space.add_collision_func(:world, :taxi) do |world_shape, taxi_shape|
+    #   
+    #   p world_shape.inspect
+    #   p taxi_shape.inspect
+    # end
     
     # @song = Song.new(self, 'media/darksideofhousemix.mod')
     # @song.play
@@ -38,18 +47,21 @@ class GameWindow < Window
     when Gosu::Button::KbEscape
       close
     when Gosu::Button::KbUp
-      @taxi.accel_y(-0.5)
+      @taxi.accel_y(-10.0)
     when Gosu::Button::KbDown
-      @taxi.accel_y(0.5)
+      @taxi.accel_y(10.0)
     when Gosu::Button::KbLeft
-      @taxi.accel_x(-0.5)
+      @taxi.accel_x(-10.0)
     when Gosu::Button::KbRight
-      @taxi.accel_x(0.5)
+      @taxi.accel_x(10.0)
     end
   end
 
   def update
-    @taxi.update
+    SUBSTEPS.times do
+      @space.step(@dt)
+      @taxi.update
+    end
   end
   
 end
@@ -68,6 +80,7 @@ class Map
   attr_reader :width, :height, :static_shapes
   
   def initialize(window, filename)
+    p filename
     # Load 60x60 tiles, 5px overlap in all four directions.
     @tileset = Image.load_tiles(window, "media/maptiles.png", 32, 32, true)
 
@@ -80,7 +93,8 @@ class Map
     @static_shapes = []
     
     @tiles = Array.new(@width) do |x|
-      Array.new(@height) do |y|        
+      Array.new(@height) do |y| 
+        shape_vertices = []      
         tile = case lines[y][x, 1]
         when '#'
           shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
@@ -102,12 +116,18 @@ class Map
         end
         if tile
           shape = CP::Shape::Poly.new(@body, shape_vertices, CP::Vec2.new(x * 32 - 16, y * 32 - 16))
-          @static_shapes << shape        
+          shape.collision_type = :world
+          shape.group = :world
+          shape.e = 1
+          shape.u = 1
+          @static_shapes << shape
         end
         tile
       end
     end
   end
+    
+  
   def draw # (screen_x, screen_y)
 
     # Very primitive drawing function:
@@ -123,9 +143,6 @@ class Map
       end
     end
   end
-  def static_shapes
-    []
-  end
 end
 
 class Taxi
@@ -137,28 +154,36 @@ class Taxi
     @speed_y = 0
     @body = CP::Body.new(10.0, 150.0)
     vertices = [CP::Vec2.new(-32, -16),CP::Vec2.new(-32, 16), CP::Vec2.new(32, 16),CP::Vec2.new(32, -16)]
-    @shape = CP::Shape::Poly.new(@body, vertices, CP::Vec2.new(32,16))
+    @shape = CP::Shape::Poly.new(@body, vertices, CP::Vec2.new(0,0))
+    @shape.collision_type = :taxi
+    @shape.e = 1
+    @shape.u = 1
+    @body.p = CP::Vec2.new(100,100)
+    window.space.add_shape(@shape)
+    window.space.add_body(@body)  
   end
   
   def update
+    #puts @body.v.inspect
     @x_pos += @speed_x
     @y_pos += @speed_y
   end
   
   def draw
-    @image.draw(@x_pos,@y_pos, 1)
+    @image.draw(@body.p.x,@body.p.y, 1)
   end
   
   def accel_x(acc)
-    @speed_x += acc
+    @body.v += CP::Vec2.new(acc, 0)
   end
   
   def accel_y(acc)
-    @speed_y += acc    
+    @body.v += CP::Vec2.new(0, acc)
   end
   
+private
+  
 end
-
 
 window = GameWindow.new
 window.show
