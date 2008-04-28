@@ -11,6 +11,21 @@ SCREEN_HEIGHT = 480
 
 SUBSTEPS = 6
 
+class Numeric 
+  def gosu_to_radians
+    (self - 90) * Math::PI / 180.0
+  end
+  
+  def radians_to_gosu
+    self * 180.0 / Math::PI + 90
+  end
+  
+  def radians_to_vec2
+    CP::Vec2.new(Math::cos(self), Math::sin(self))
+  end
+end
+
+
 class GameWindow < Window
   attr_reader :space
   def initialize
@@ -19,7 +34,7 @@ class GameWindow < Window
     @space = CP::Space.new
     @space.damping = 0.8
     @dt = (1.0/60.0)
-    @space.gravity = CP::Vec2.new(0, 5)
+    @space.gravity = CP::Vec2.new(0, 1)
     @space.iterations = 5
     @map = Map.new(self, "media/level001.txt")
     @space.add_body(@map.static_shapes.first.body)
@@ -27,11 +42,12 @@ class GameWindow < Window
       @space.add_static_shape(shape)
     end
     
-    # @space.add_collision_func(:world, :taxi) do |world_shape, taxi_shape|
-    #   
-    #   p world_shape.inspect
-    #   p taxi_shape.inspect
-    # end
+    @buttons_pressed = {}
+    
+    @space.add_collision_func(:world, :taxi) do |world_shape, taxi_shape|
+      puts "collision: #{taxi_shape.bb.inspect}"
+      puts "with: #{world_shape.bb.inspect}"
+    end
     
     # @song = Song.new(self, 'media/darksideofhousemix.mod')
     # @song.play
@@ -42,22 +58,32 @@ class GameWindow < Window
     @taxi.draw
   end
   
-  def button_down(id)
-    case id
-    when Gosu::Button::KbEscape
-      close
-    when Gosu::Button::KbUp
-      @taxi.accel_y(-10.0)
-    when Gosu::Button::KbDown
-      @taxi.accel_y(10.0)
-    when Gosu::Button::KbLeft
-      @taxi.accel_x(-10.0)
-    when Gosu::Button::KbRight
-      @taxi.accel_x(10.0)
+  def check_buttons
+    @buttons_pressed.reject{|k,v| v == false }.keys.each do |key|
+      case key
+      when Gosu::Button::KbUp
+        @taxi.accel_y(-1.0)
+      when Gosu::Button::KbDown
+        @taxi.accel_y(1.0)
+      when Gosu::Button::KbLeft
+        @taxi.accel_x(-1.0)
+      when Gosu::Button::KbRight
+        @taxi.accel_x(1.0)
+      end      
     end
   end
 
+  def button_down(key)
+    close if key == Gosu::Button::KbEscape
+    
+    @buttons_pressed[key] = true
+  end
+  def button_up(key)
+    @buttons_pressed[key] = false
+  end
+
   def update
+    check_buttons
     SUBSTEPS.times do
       @space.step(@dt)
       @taxi.update
@@ -97,29 +123,30 @@ class Map
         shape_vertices = []      
         tile = case lines[y][x, 1]
         when '#'
-          shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
+          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(0, 32),CP::Vec2.new(32, 32),CP::Vec2.new(32, 0)]
           Tiles::Full
         when '1'
-          shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
+          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(0, 32),CP::Vec2.new(32, 0)]
           Tiles::TopLeft
         when '3'
-          shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
+          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(32, 32),CP::Vec2.new(32, 0)]
           Tiles::TopRight
         when '2'
-          shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
+          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(0, 32),CP::Vec2.new(32, 32)]
           Tiles::BottomLeft
         when '4'
-          shape_vertices = [CP::Vec2.new(-16,-16), CP::Vec2.new(-16, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-16, 16)]
+          shape_vertices = [CP::Vec2.new(32,0), CP::Vec2.new(0, 32),CP::Vec2.new(32, 32)]
           Tiles::BottomRight
         else
-          nil
+          # shape_vertices = [CP::Vec2.new(-17,-17), CP::Vec2.new(-17, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-17, 16)]
+          # Tiles::Full
         end
         if tile
-          shape = CP::Shape::Poly.new(@body, shape_vertices, CP::Vec2.new(x * 32 - 16, y * 32 - 16))
+          shape = CP::Shape::Poly.new(@body, shape_vertices, CP::Vec2.new(x * 32, y * 32))
           shape.collision_type = :world
           shape.group = :world
-          shape.e = 1
-          shape.u = 1
+          shape.e = 0
+          shape.u = 0
           @static_shapes << shape
         end
         tile
@@ -138,6 +165,7 @@ class Map
         if tile
           # Draw the tile with an offset (tile images have some overlap)
           # Scrolling is implemented here just as in the game objects.
+          # @image.draw_rot(@shape.body.p.x, @shape.body.p.y, 1, @sbody.a.radians_to_gosu)
           @tileset[tile].draw(x * 32,  y * 32, 0)
         end
       end
@@ -152,13 +180,14 @@ class Taxi
     @y_pos = 100
     @speed_x = 0
     @speed_y = 0
-    @body = CP::Body.new(10.0, 150.0)
-    vertices = [CP::Vec2.new(-32, -16),CP::Vec2.new(-32, 16), CP::Vec2.new(32, 16),CP::Vec2.new(32, -16)]
-    @shape = CP::Shape::Poly.new(@body, vertices, CP::Vec2.new(0,0))
+    @body = CP::Body.new(10.0, Float::MAX)
+    vertices = [CP::Vec2.new(0, 0),CP::Vec2.new(0,64), CP::Vec2.new(32, 64),CP::Vec2.new(32, 0)]
+    @shape = CP::Shape::Poly.new(@body, vertices, CP::Vec2.new(-16,-32))
     @shape.collision_type = :taxi
-    @shape.e = 1
-    @shape.u = 1
-    @body.p = CP::Vec2.new(100,100)
+    @shape.e = 0
+    @shape.u = 0
+    @body.p = CP::Vec2.new(@x_pos,@y_pos)
+    @body.a = -Math::PI / 2
     window.space.add_shape(@shape)
     window.space.add_body(@body)  
   end
@@ -170,7 +199,8 @@ class Taxi
   end
   
   def draw
-    @image.draw(@body.p.x,@body.p.y, 1)
+    @image.draw_rot(@shape.body.p.x, @shape.body.p.y, 1, @shape.body.a.radians_to_gosu)
+    # @image.draw(@body.p.x,@body.p.y, 2)
   end
   
   def accel_x(acc)
