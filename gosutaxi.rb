@@ -33,7 +33,7 @@ class GameWindow < Window
     super(SCREEN_WIDTH, SCREEN_HEIGHT, false, 16)
     self.caption = "Gosutaxi"
     @space = CP::Space.new
-    @space.damping = 0.8
+    @space.damping = 0.95
     @dt = (1.0/60.0)
     @space.gravity = CP::Vec2.new(0, 1)
     @space.iterations = 5
@@ -64,8 +64,6 @@ class GameWindow < Window
       case key
       when Gosu::Button::KbUp
         @taxi.accel_y(-1.0)
-      when Gosu::Button::KbDown
-        @taxi.accel_y(1.0)
       when Gosu::Button::KbLeft
         @taxi.accel_x(-1.0)
       when Gosu::Button::KbRight
@@ -76,7 +74,7 @@ class GameWindow < Window
 
   def button_down(key)
     close if key == Gosu::Button::KbEscape
-    
+    @taxi.toggle_pods if key == Gosu::Button::KbSpace
     @buttons_pressed[key] = true
   end
   def button_up(key)
@@ -176,7 +174,7 @@ end
 
 class Taxi
   def initialize(window)
-    @image = Image.new(window, 'media/taxi.png', true)
+    @taxi_tiles = Image.load_tiles(window, 'media/taxi.png', 64, 32, true)
     @x_pos = 100
     @y_pos = 100
     @speed_x = 0
@@ -189,6 +187,7 @@ class Taxi
     @shape.u = 0
     @body.p = CP::Vec2.new(@x_pos,@y_pos)
     @body.a = -Math::PI / 2
+    @pods = 0
     window.space.add_shape(@shape)
     window.space.add_body(@body)  
   end
@@ -200,16 +199,20 @@ class Taxi
   end
   
   def draw
-    @image.draw_rot(@shape.body.p.x, @shape.body.p.y, 1, @shape.body.a.radians_to_gosu)
+    @taxi_tiles[@pods].draw_rot(@shape.body.p.x, @shape.body.p.y, 1, @shape.body.a.radians_to_gosu)
     # @image.draw(@body.p.x,@body.p.y, 2)
   end
   
   def accel_x(acc)
-    @body.v += CP::Vec2.new(acc, 0)
+    @body.v += CP::Vec2.new(acc, 0) if @pods == 0
   end
   
   def accel_y(acc)
     @body.v += CP::Vec2.new(0, acc)
+  end
+  
+  def toggle_pods
+    @pods = (@pods + 1) % 2
   end
   
 private
