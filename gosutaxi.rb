@@ -8,6 +8,7 @@ include Gosu
 
 SCREEN_WIDTH = 640
 SCREEN_HEIGHT = 480
+TILE_SIZE = 16
 
 SUBSTEPS = 6
 
@@ -108,7 +109,7 @@ class Map
   def initialize(window, filename)
     p filename
     # Load 60x60 tiles, 5px overlap in all four directions.
-    @tileset = Image.load_tiles(window, "media/maptiles.png", 32, 32, true)
+    @tileset = Image.load_tiles(window, "media/maptiles.png", TILE_SIZE, TILE_SIZE, true)
 
     lines = File.readlines(filename).map { |line| line }
     @height = lines.size
@@ -123,26 +124,26 @@ class Map
         shape_vertices = []      
         tile = case lines[y][x, 1]
         when '#'
-          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(0, 32),CP::Vec2.new(32, 32),CP::Vec2.new(32, 0)]
+          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(0, TILE_SIZE),CP::Vec2.new(TILE_SIZE, TILE_SIZE),CP::Vec2.new(TILE_SIZE, 0)]
           Tiles::Full
         when '1'
-          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(0, 32),CP::Vec2.new(32, 0)]
+          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(0, TILE_SIZE),CP::Vec2.new(TILE_SIZE, 0)]
           Tiles::TopLeft
         when '3'
-          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(32, 32),CP::Vec2.new(32, 0)]
+          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(TILE_SIZE, TILE_SIZE),CP::Vec2.new(TILE_SIZE, 0)]
           Tiles::TopRight
         when '2'
-          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(0, 32),CP::Vec2.new(32, 32)]
+          shape_vertices = [CP::Vec2.new(0,0), CP::Vec2.new(0, TILE_SIZE),CP::Vec2.new(TILE_SIZE, TILE_SIZE)]
           Tiles::BottomLeft
         when '4'
-          shape_vertices = [CP::Vec2.new(32,0), CP::Vec2.new(0, 32),CP::Vec2.new(32, 32)]
+          shape_vertices = [CP::Vec2.new(TILE_SIZE,0), CP::Vec2.new(0, TILE_SIZE),CP::Vec2.new(TILE_SIZE, TILE_SIZE)]
           Tiles::BottomRight
         else
           # shape_vertices = [CP::Vec2.new(-17,-17), CP::Vec2.new(-17, 16),CP::Vec2.new(16, 16),CP::Vec2.new(-17, 16)]
           # Tiles::Full
         end
         if tile
-          shape = CP::Shape::Poly.new(@body, shape_vertices, CP::Vec2.new(x * 32, y * 32))
+          shape = CP::Shape::Poly.new(@body, shape_vertices, CP::Vec2.new(x * TILE_SIZE, y * TILE_SIZE))
           shape.collision_type = :world
           shape.group = :world
           shape.e = 0
@@ -166,7 +167,7 @@ class Map
           # Draw the tile with an offset (tile images have some overlap)
           # Scrolling is implemented here just as in the game objects.
           # @image.draw_rot(@shape.body.p.x, @shape.body.p.y, 1, @sbody.a.radians_to_gosu)
-          @tileset[tile].draw(x * 32,  y * 32, 0)
+          @tileset[tile].draw(x * TILE_SIZE,  y * TILE_SIZE, 0)
         end
       end
     end
