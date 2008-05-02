@@ -12,6 +12,12 @@ TILE_SIZE = 16
 
 SUBSTEPS = 6
 
+def array2poly(array)
+  array.map do |vector|
+    CP::Vec2.new(vector.first, vector.last)
+  end
+end
+
 class Numeric 
   def gosu_to_radians
     (self - 90) * Math::PI / 180.0
@@ -44,11 +50,17 @@ class GameWindow < Window
     end
     
     @buttons_pressed = {}
-    
-    @space.add_collision_func(:world, :taxi) do |world_shape, taxi_shape|
+    # TODO: building collision detection [2008-05-02]
+    # @space.add_collision_func(:world, :taxi) do |world_shape, taxi_shape|
+    #   puts "collision: #{taxi_shape.bb.inspect}"
+    #   puts "with: #{world_shape.bb.inspect}"
+    # end
+
+    @space.add_collision_func(:world, :taxi_pods) do |world_shape, taxi_shape|
       puts "collision: #{taxi_shape.bb.inspect}"
       puts "with: #{world_shape.bb.inspect}"
     end
+
     
     # @song = Song.new(self, 'media/darksideofhousemix.mod')
     # @song.play
@@ -174,21 +186,56 @@ end
 
 class Taxi
   def initialize(window)
+    @window = window
     @taxi_tiles = Image.load_tiles(window, 'media/taxi.png', 64, 32, true)
     @x_pos = 100
     @y_pos = 100
     @speed_x = 0
     @speed_y = 0
     @body = CP::Body.new(10.0, Float::MAX)
-    vertices = [CP::Vec2.new(0, 0),CP::Vec2.new(0,64), CP::Vec2.new(32, 64),CP::Vec2.new(32, 0)]
-    @shape = CP::Shape::Poly.new(@body, vertices, CP::Vec2.new(-16,-32))
-    @shape.collision_type = :taxi
-    @shape.e = 0
-    @shape.u = 0
+    vertices_rump = [
+      [4,1],
+      [4,62],
+      [14,63],
+      [19,19],
+      [16,4],
+      [10,0],
+      [6,0],
+    ]
+    vertices_cabin = [
+      [20,21],
+      [16,51],
+      [27,48],
+      [31,44],
+      [31,30],
+      [29,25],
+    ]
+      
+    @shape_rump = CP::Shape::Poly.new(@body, array2poly(vertices_rump), CP::Vec2.new(-16,-32))
+    @shape_rump.collision_type = :taxi
+    @shape_rump.e = 0    
+    @shape_rump.u = 0
+    
+    @shape_cabin = CP::Shape::Poly.new(@body, array2poly(vertices_cabin), CP::Vec2.new(-16,-32))
+    @shape_cabin.collision_type = :taxi
+    @shape_cabin.e = 0
+    @shape_cabin.u = 0
+    
+    @shapes_pods = [
+      CP::Shape::Segment.new(@body, CP::Vec2.new(5,21), CP::Vec2.new(0,18), 3),
+      CP::Shape::Segment.new(@body, CP::Vec2.new(5,43), CP::Vec2.new(0,45), 3),
+    ]
+    @shapes_pods.each do |shape| 
+      shape.e = 0
+      shape.u = 0
+      @shape_cabin.collision_type = :taxi_pods
+    end
+
     @body.p = CP::Vec2.new(@x_pos,@y_pos)
     @body.a = -Math::PI / 2
     @pods = 0
-    window.space.add_shape(@shape)
+    window.space.add_shape(@shape_rump)
+    window.space.add_shape(@shape_cabin)
     window.space.add_body(@body)  
   end
   
@@ -199,7 +246,7 @@ class Taxi
   end
   
   def draw
-    @taxi_tiles[@pods].draw_rot(@shape.body.p.x, @shape.body.p.y, 1, @shape.body.a.radians_to_gosu)
+    @taxi_tiles[@pods].draw_rot(@body.p.x, @body.p.y, 1, @body.a.radians_to_gosu)
     # @image.draw(@body.p.x,@body.p.y, 2)
   end
   
@@ -211,8 +258,18 @@ class Taxi
     @body.v += CP::Vec2.new(0, acc)
   end
   
+  # this doesn't really work somehow
   def toggle_pods
     @pods = (@pods + 1) % 2
+    if @pods == 1
+      @shapes_pods.each do |shape|
+        @window.space.add_shape(shape)
+      end
+    else
+      @shapes_pods.each do |shape|
+        @window.space.remove_shape(shape)
+      end      
+    end
   end
   
 private
